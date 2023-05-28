@@ -5,24 +5,26 @@ import { InMemoryCheckInsRepository } from '@/repositories/in-memory/in-memory-c
 import { GymsRepository } from '@/repositories/interfaces/gyms-repository'
 import { InMemoryGymsRepository } from '@/repositories/in-memory/in-memory-gyms-repository'
 import { Decimal } from '@prisma/client/runtime/library'
+import { MaxDistanceError } from './errors/max-distance-error'
+import { MaxNumberOfCheckInsError } from './errors/max-number-of-check-ins-error'
 
 let checkInsRepository: CheckInsRepository
 let gymsRepository: GymsRepository
 let sut: CheckInUseCase
 
 describe('Check-in Use Case', () => {
-  beforeEach(() => {
+  beforeEach(async () => {
     checkInsRepository = new InMemoryCheckInsRepository()
     gymsRepository = new InMemoryGymsRepository()
     sut = new CheckInUseCase(checkInsRepository, gymsRepository)
 
-    gymsRepository.items.push({
+    await gymsRepository.create({
       id: 'gym-01',
       title: 'Developers Jym',
-      description: '',
-      latitude: new Decimal(0),
-      longitude: new Decimal(0),
-      phone: '',
+      description: null,
+      phone: null,
+      latitude: -23.3988617,
+      longitude: -46.4304419,
     })
 
     vi.useFakeTimers()
@@ -38,8 +40,8 @@ describe('Check-in Use Case', () => {
     const { checkIn } = await sut.execute({
       gymId: 'gym-01',
       userId: 'user-01',
-      userLatitude: 0,
-      userLongitude: 0,
+      userLatitude: -23.3988617,
+      userLongitude: -46.4304419,
     })
 
     expect(checkIn.id).toEqual(expect.any(String))
@@ -51,18 +53,18 @@ describe('Check-in Use Case', () => {
     await sut.execute({
       gymId: 'gym-01',
       userId: 'user-01',
-      userLatitude: 0,
-      userLongitude: 0,
+      userLatitude: -23.3988617,
+      userLongitude: -46.4304419,
     })
 
     await expect(() =>
       sut.execute({
         gymId: 'gym-01',
         userId: 'user-01',
-        userLatitude: 0,
-        userLongitude: 0,
+        userLatitude: -23.3988617,
+        userLongitude: -46.4304419,
       }),
-    ).rejects.toBeInstanceOf(Error)
+    ).rejects.toBeInstanceOf(MaxNumberOfCheckInsError)
   })
 
   it('should be able to check in again in a different day', async () => {
@@ -71,8 +73,8 @@ describe('Check-in Use Case', () => {
     await sut.execute({
       gymId: 'gym-01',
       userId: 'user-01',
-      userLatitude: 0,
-      userLongitude: 0,
+      userLatitude: -23.3988617,
+      userLongitude: -46.4304419,
     })
 
     vi.setSystemTime(new Date(2022, 0, 21, 6, 0, 0))
@@ -80,8 +82,8 @@ describe('Check-in Use Case', () => {
     const { checkIn } = await sut.execute({
       gymId: 'gym-01',
       userId: 'user-01',
-      userLatitude: 0,
-      userLongitude: 0,
+      userLatitude: -23.3988617,
+      userLongitude: -46.4304419,
     })
 
     expect(checkIn.id).toEqual(expect.any(String))
@@ -90,7 +92,7 @@ describe('Check-in Use Case', () => {
   it('should not be able to check in on distant gym', async () => {
     vi.setSystemTime(new Date(2022, 0, 20, 6, 0, 0))
 
-    gymsRepository.items.push({
+    await gymsRepository.create({
       id: 'gym-02',
       title: 'TypeScript Gym',
       description: '',
@@ -106,6 +108,6 @@ describe('Check-in Use Case', () => {
         userLatitude: -23.3546909,
         userLongitude: -46.4626541,
       }),
-    ).rejects.toBeInstanceOf(Error)
+    ).rejects.toBeInstanceOf(MaxDistanceError)
   })
 })

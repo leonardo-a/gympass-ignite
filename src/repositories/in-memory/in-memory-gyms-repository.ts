@@ -1,5 +1,6 @@
 import { Prisma, Gym } from '@prisma/client'
 import { GymsRepository } from '../interfaces/gyms-repository'
+import { randomUUID } from 'crypto'
 
 export class InMemoryGymsRepository implements GymsRepository {
   public items: Gym[] = []
@@ -15,6 +16,18 @@ export class InMemoryGymsRepository implements GymsRepository {
   }
 
   async create(data: Prisma.GymCreateInput): Promise<Gym> {
-    throw new Error('Method not implemented.')
+    const gym = {
+      id: data.id ?? randomUUID(),
+      title: data.title,
+      description: data.description ?? null,
+      phone: data.phone ?? null,
+      latitude: new Prisma.Decimal(data.latitude.toString()),
+      longitude: new Prisma.Decimal(data.longitude.toString()),
+      createdAt: new Date(),
+    }
+
+    this.items.push(gym)
+
+    return gym
   }
 }
