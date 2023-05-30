@@ -1,12 +1,74 @@
 import { Prisma, CheckIn } from '@prisma/client'
 import { CheckInsRepository } from '../interfaces/check-ins-repository'
+import { prisma } from '@/libs/prisma'
+import dayjs from 'dayjs'
 
 export class PrismaCheckInsRepository implements CheckInsRepository {
-  findByUseIdOnDate(userId: string, date: Date): Promise<CheckIn | null> {
-    throw new Error('Method not implemented.')
+  async create(data: Prisma.CheckInUncheckedCreateInput) {
+    const checkIn = await prisma.checkIn.create({
+      data,
+    })
+
+    return checkIn
   }
 
-  create(data: Prisma.CheckInUncheckedCreateInput): Promise<CheckIn> {
-    throw new Error('Method not implemented.')
+  async save(data: CheckIn) {
+    const checkIn = await prisma.checkIn.update({
+      where: {
+        id: data.id,
+      },
+      data,
+    })
+
+    return checkIn
+  }
+
+  async findById(id: string) {
+    const checkIn = await prisma.checkIn.findUnique({
+      where: {
+        id,
+      },
+    })
+
+    return checkIn
+  }
+
+  async findManyByUserId(userId: string, page: number) {
+    const checkIns = await prisma.checkIn.findMany({
+      where: {
+        userId,
+      },
+      take: 20,
+      skip: (page - 1) * 20,
+    })
+
+    return checkIns
+  }
+
+  async countByUserId(userId: string) {
+    const count = await prisma.checkIn.count({
+      where: {
+        userId,
+      },
+    })
+
+    return count
+  }
+
+  async findByUserIdOnDate(userId: string, date: Date) {
+    const startOfTheDay = dayjs(date).startOf('date')
+    const endOfTheDay = dayjs(date).endOf('date')
+
+    const checkIn = await prisma.checkIn.findFirst({
+      where: {
+        userId,
+        createdAt: {
+          gte: startOfTheDay.toDate(),
+          lte: endOfTheDay.toDate(),
+        },
+      },
+    })
+
+    return checkIn
   }
 }
