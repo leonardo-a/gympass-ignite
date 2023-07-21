@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 
-import { SearchGymUseCase } from './search-gym'
+import { SearchGymUseCase } from './search-gyms'
 import { InMemoryGymsRepository } from '@/repositories/in-memory/in-memory-gyms-repository'
 import { GymsRepository } from '@/repositories/interfaces/gyms-repository'
 
